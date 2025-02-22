@@ -1,5 +1,6 @@
 MIT License
 
+Copyright (c) 2017-2020 Cormac O'Brien
 Copyright (c) 2025 cornmonger
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
