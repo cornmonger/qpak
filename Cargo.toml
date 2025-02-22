@@ -1,0 +1,9 @@
+[workspace]
+resolver = "2"
+members = [
+    "packages/qpak-lib",
+    "packages/qpak"
+]
+
+[profile.release]
+strip = "symbols"

@@ -1,0 +1,21 @@
+[package]
+name = "qpak"
+version = "0.2.0"
+edition = "2024"
+authors = [
+    "cornmonger <cornmonger@cornmonger.fish>",
+    "Cormac O'Brien <Cormac O'Brien <cormac@c-obrien.org>",
+]
+description = "An unofficial Quake PAK file tool"
+license = "MIT"
+keywords = ["quake", "pak", "file"]
+categories = [
+    "command-line-utilities",
+    "filesystem",
+    "game-development",
+    "parsing",
+]
+
+[dependencies]
+clap = { version = "4.5.30", features = ["derive"] }
+qpak-lib = { version = "0.1.0", path = "../qpak-lib" }

@@ -1,10 +1,33 @@
 # qpak
 Unoffical Quake PAK library and toolset
 
+The project provides: 
+- A sync/async library for accessing and manipulating files in the PAK file format.
+- A multiplatform command-line tool for unpacking, packing, and listing files in PAK archives. (Linux, Windows, macOS)
+
+
+## Usage for `qpak`
+```
+qpak unpack <pak_file> [output_directory]
+qpak pack <input_directory> <pak_file>
+qpak list <pak_file>
+```
+
+## Compiling & Installing
+Written against [Rust](https://rustup.rs/) 2024 edition.
+
+`cargo build`  
+`cargo install --path packages/qpak`
+
+## Contributing
+Pull requests are more than welcome!
+
+Check out our [TODO](docs/TODO.md) for ideas.
+
 ## License (MIT)
 qpak: Unofficial Quake PAK library and toolset  
-Copyright (c) 2017-2020 Cormac O'Brien   
-Copyright (c) 2025 cornmonger
+Copyright (c) 2025 cornmonger  
+Copyright (c) 2017-2020 Cormac O'Brien
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +47,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-### Fork
-A large portion of this project's original source-code was forked from Cormac O'Brien's [richter](https://github.com/cormac-obrien/richter)
+## Fork
+A large portion of this project's original source-code was forked out of Cormac O'Brien's ambitious [richter](https://github.com/cormac-obrien/richter)
 project.
+
+## Trademarks
+"Quake" is a trademark of [id Software LLC](https://idsoftware.com).  
+This software is not endorsed by id Software or its parent companies.

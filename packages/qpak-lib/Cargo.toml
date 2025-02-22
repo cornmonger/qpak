@@ -1,0 +1,23 @@
+[package]
+name = "qpak-lib"
+version = "0.1.0"
+edition = "2024"
+authors = [
+    "cornmonger <cornmonger@cornmonger.fish>",
+    "Cormac O'Brien <Cormac O'Brien <cormac@c-obrien.org>",
+]
+description = "An unofficial Quake PAK file library"
+license = "MIT"
+keywords = ["quake", "pak", "file"]
+categories = ["filesystem", "game-development", "parsing"]
+
+[dependencies]
+async-stream = "0.3.6"
+async-walkdir = "2.1.0"
+byteorder = "1.5.0"
+env_logger = "0.11.6"
+log = "0.4.26"
+thiserror = "2.0.11"
+tokio = { version = "1.43.0", features = ["fs", "io-std", "io-util"] }
+tokio-stream = "0.1.17"
+walkdir = "2.5.0"
