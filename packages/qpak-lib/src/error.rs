@@ -22,6 +22,8 @@ pub enum Error {
     NoSuchFile(String),
     #[error("Not a directory: {0}")]
     NotDirectory(String),
+    #[error("Pak path already exists: {0}")]
+    PakPathExists(String)
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

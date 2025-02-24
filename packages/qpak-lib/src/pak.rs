@@ -119,6 +119,11 @@ impl Table {
         &self.entries
     }
 
+    pub fn contains<P: AsRef<Path>>(&self, path: P) -> bool {
+        let path = path.as_ref().to_str().unwrap();
+        self.entries.iter().any(|entry| entry.path == path)
+    }
+
     pub async fn write<W>(&self, writer: &mut W) -> Result<()>
     where
         W: AsyncWrite + Unpin,
@@ -142,7 +147,7 @@ impl Table {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TableEntry {
     pub path: String,
     pub offset: u32,
