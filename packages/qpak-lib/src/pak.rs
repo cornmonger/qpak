@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 //! Quake PAK archive manipulation.
-use std::{fs::File, io::{BufReader, Read, Seek, Write, BufWriter}, path::Path};
+use std::{fs::File, io::{BufReader, BufWriter, Read, Seek, Write}, path::Path};
 use byteorder::{ReadBytesExt, WriteBytesExt, LittleEndian};
 use std::path::PathBuf;
 use tokio::{fs::File as AsyncFile, io::{AsyncRead, AsyncReadExt, AsyncSeek, AsyncSeekExt, AsyncWrite, AsyncWriteExt, BufReader as AsyncBufReader, BufWriter as AsyncBufWriter,SeekFrom}};
@@ -324,12 +324,19 @@ impl PakManifest {
 
     /// Generates a PAK manifest from a directory.
     /// Throws [Error::NonUtf8Path], [Error::FilenameTooLong]
-    pub fn from_dir_sync<P>(input_dir: P) -> Result<Self>
-    where
-        P: AsRef<Path>
-    {
-        let files = pak_std_walkdir(input_dir);
+    pub fn from_dir_sync<P: AsRef<Path>>(input_dir: P) -> Result<Self> {
+        let files = walk_pak_dir_sync(input_dir)?;
+        Self::from_walk_results(files)
+    }
 
+    /// Generates a PAK manifest from a directory.
+    /// Throws [Error::NonUtf8Path], [Error::FilenameTooLong]
+    pub async fn from_dir<P: AsRef<Path>>(input_dir: P) -> Result<Self> {
+        let files = walk_pak_dir(input_dir).await?;
+        Self::from_walk_results(files)
+    }
+
+    pub fn from_walk_results(files: Vec<(PathBuf, u64)>) -> Result<Self> {
         let mut total_size = 0;
         for (_, size) in &files {
             total_size += size;
@@ -420,7 +427,7 @@ impl PakFile {
     }
 
     /// Creates a PAK file by copying files from a directory. The manifest for the directory must already have been generated using [PakManifest::from_dir].
-    pub async fn write_from_dir<P>(input_dir: P, manifest: PakManifest, output_filepath: P) -> Result<Self>
+    pub async fn create_from_dir<P>(input_dir: P, manifest: PakManifest, output_filepath: P) -> Result<Self>
     where
         P: AsRef<Path>,
     {
@@ -449,8 +456,8 @@ impl PakFile {
         Ok(Self::new(PathBuf::from(output_filepath.as_ref()), manifest))
     }
 
-    /// Creates a PAK file by copying files from a directory. The manifest for the directory must already have been generated using [PakManifest::from_dir_sync].
-    pub fn write_from_dir_sync<P>(input_dir: P, manifest: PakManifest, output_filepath: P) -> Result<Self>
+    /// Creates (writes) a PAK file by copying files from a directory. The manifest for the directory must already have been generated using [PakManifest::from_dir_sync].
+    pub fn create_from_dir_sync<P>(input_dir: P, manifest: PakManifest, output_filepath: P) -> Result<Self>
     where
         P: AsRef<Path>,
     {
@@ -488,14 +495,41 @@ impl PakFile {
             let mut path = std::path::PathBuf::from(dest_dir.as_ref());
             path.push(&pak_item.table_entry().path());
 
-            std::fs::create_dir_all(&path)
-               .map_err(|e| Error::CreateDirectory(e))?;
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|e| Error::CreateDirectory(e))?;
+            }
 
             let file = File::create(&path)
                 .map_err(|e| Error::OpenPak(e))?;
 
             let mut writer = BufWriter::new(file);
             writer.write_all(pak_item.data().as_ref())
+                .map_err(|e| Error::WritePak(e))?;
+        }
+
+        Ok(())
+    }
+
+    /// Extracts the contents of the PAK file to the specified directory.
+    /// Throws [Error::CreateDirectory], [Error::OpenPak], [Error::WritePak]
+    pub async fn extract<P: AsRef<Path>>(&self, dest_dir: P) -> Result<()> {
+        use tokio_stream::StreamExt;
+        let mut items = std::pin::pin!(self.read_items());
+        while let Some(pak_item) = items.try_next().await? {
+            let mut path = std::path::PathBuf::from(dest_dir.as_ref());
+            path.push(&pak_item.table_entry().path());
+
+            if let Some(parent) = path.parent() {
+                tokio::fs::create_dir_all(parent).await
+                    .map_err(|e| Error::CreateDirectory(e))?;
+            }
+
+            let file = AsyncFile::create(&path).await
+                .map_err(|e| Error::OpenPak(e))?;
+
+            let mut writer = AsyncBufWriter::new(file);
+            writer.write_all(pak_item.data().as_ref()).await
                 .map_err(|e| Error::WritePak(e))?;
         }
 
@@ -584,7 +618,8 @@ impl PakItem<'_> {
 /// Sorts based on heirarchy and file name.
 /// This sort order should be maintained in each PAK.
 /// Returns: (path: PathBuf, size: u64)
-pub fn pak_std_walkdir<P: AsRef<Path>>(dir: P) -> Vec<(PathBuf, u64)> {
+/// Throws [Error::ReadDirectory]
+pub fn walk_pak_dir_sync<P: AsRef<Path>>(dir: P) -> Result<Vec<(PathBuf, u64)>> {
     let mut entries = walkdir::WalkDir::new(&dir)
         .follow_links(true)
         .into_iter()
@@ -592,16 +627,40 @@ pub fn pak_std_walkdir<P: AsRef<Path>>(dir: P) -> Vec<(PathBuf, u64)> {
         .filter(|entry| !entry.file_name().to_string_lossy().starts_with('.'))
         .filter(|entry| entry.metadata().is_ok_and(|metadata| metadata.is_file()))
         .map(|entry| {
-            let metadata = entry.metadata().unwrap();
-            (entry.path().strip_prefix(&dir).unwrap().to_path_buf(), metadata.len())
+            let metadata = entry.metadata()
+                .map_err(|e| Error::ReadDirectory(entry.path().to_path_buf(), e.to_string()))?;
+            let path = entry.path().strip_prefix(&dir)
+                .map_err(|e| Error::ReadDirectory(entry.path().to_path_buf(), e.to_string()))?
+                .to_path_buf();
+            let len = metadata.len();
+            Ok::<(PathBuf, u64), Error>((path, len))
         })
-        .collect::<Vec<_>>();
+        .collect::<Vec<_>>()
+        .into_iter()
+        .collect::<Result<Vec<_>>>()?;
 
+    sort_walk_paths(&mut entries);
+    Ok(entries)
+}
+
+/// Sorts based on heirarchy and file name
+pub fn sort_walk_paths(entries: &mut Vec<(PathBuf, u64)>) {
     entries.sort_by(|a, b| {
         match a.0.parent().cmp(&b.0.parent()) {
             std::cmp::Ordering::Equal => a.0.file_name().cmp(&b.0.file_name()),
             other => other,
         }
     });
-    entries
+}
+
+/// Walks a directory and returns a vector of tuples containing the path and size of each file.
+/// Sorts based on heirarchy and file name.
+/// This sort order should be maintained in each PAK.
+/// Returns: (path: PathBuf, size: u64)
+/// Throws [Error::ReadDirectory]
+pub async fn walk_pak_dir<P: AsRef<Path>>(dir: P) -> Result<Vec<(PathBuf, u64)>> {
+    let dir = dir.as_ref().to_path_buf();
+    tokio::task::spawn(async move {
+        walk_pak_dir_sync(dir)
+    }).await.expect("Expected task to join properly")
 }

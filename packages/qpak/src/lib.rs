@@ -34,4 +34,7 @@
 pub mod cli;
 pub mod run;
 
-pub use run::run;
+pub use crate::{
+    run::*,
+    cli::*
+};

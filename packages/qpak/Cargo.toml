@@ -20,3 +20,6 @@ categories = [
 clap = { version = "4.5.30", features = ["derive"] }
 qpak-lib = { version = "0.1.0", path = "../qpak-lib" }
 tempfile = "3.17.1"
+
+[dev-dependencies]
+dir-diff = "0.3.3"

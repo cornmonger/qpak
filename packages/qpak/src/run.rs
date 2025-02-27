@@ -5,16 +5,17 @@ use std::path::PathBuf;
 
 pub fn run() {
     let cli = Cli::parse();
+    if let Err(e) = run_cli(cli) {
+        println!("{}", e);
+        std::process::exit(1);
+    }
+}
 
-    let result = match &cli.command {
+pub fn run_cli(cli: Cli) -> Result<()> {
+    match &cli.command {
         Command::Pack(cmd) => run_pack(&cli, cmd),
         Command::Unpack(cmd) => run_unpack(&cli, cmd),
         Command::List(cmd) => run_list(&cli, cmd)
-    };
-
-    if let Err(e) = result {
-        println!("{}", e);
-        std::process::exit(1);
     }
 }
 
@@ -27,7 +28,7 @@ fn run_list(_cli: &Cli, cmd: &ListCommand) -> Result<()> {
 
 fn run_pack(_cli: &Cli, cmd: &PackCommand) -> Result<()> {
     let manifest = PakManifest::from_dir_sync(&cmd.source_dir)?;
-    let _pak = PakFile::write_from_dir_sync(&cmd.source_dir, manifest, &cmd.pak_file)?;
+    let _pak = PakFile::create_from_dir_sync(&cmd.source_dir, manifest, &cmd.pak_file)?;
     println!("packed: {}", cmd.pak_file.to_str().unwrap());
     Ok(())
 }

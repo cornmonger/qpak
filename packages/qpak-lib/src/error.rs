@@ -29,6 +29,8 @@ pub enum Error {
     PakPathExists(String),
     #[error("Failed to create directory: {0}")]
     CreateDirectory(std::io::Error),
+    #[error("Failed to read directory: {0} :: {1}")]
+    ReadDirectory(std::path::PathBuf, String),
     #[error("Failed to open PAK file: {0}")]
     OpenPak(std::io::Error),
     #[error("Failed to write to PAK file: {0}")]

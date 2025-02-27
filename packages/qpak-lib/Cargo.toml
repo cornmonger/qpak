@@ -15,8 +15,19 @@ categories = ["filesystem", "game-development", "parsing"]
 async-stream = "0.3.6"
 async-walkdir = "2.1.0"
 byteorder = "1.5.0"
+dir-diff = "0.3.3"
 log = "0.4.26"
+map-ok = "1.0.0"
 thiserror = "2.0.11"
-tokio = { version = "1.43.0", features = ["fs", "io-std", "io-util"] }
+tokio = { version = "1.43.0", features = ["rt", "fs", "io-std", "io-util"] }
 tokio-stream = "0.1.17"
 walkdir = "2.5.0"
+
+[dev-dependencies]
+tokio = { version = "1.43.0", features = [
+    "macros",
+    "rt",
+    "fs",
+    "io-std",
+    "io-util",
+] }
