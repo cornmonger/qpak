@@ -173,7 +173,7 @@ impl Table {
 }
 
 /// A single entry in a PAK [Table].
-/// Each entry is [TableEntry::PATH_SIZE] (64 bytes) in size.
+/// Each entry is 64 bytes in size.
 #[derive(Debug, Clone)]
 pub struct TableEntry {
     /// Stored as a null-terminated [TableEntry::PATH_SIZE] UTF8 string. Paths do not use '/' for root.
@@ -190,7 +190,7 @@ impl TableEntry {
     /// The fixed size of a table entry (64 bytes)
     const SIZE: usize = Self::PATH_SIZE + size_of::<u32>() + size_of::<u32>();
 
-    /// Will throw an [Error::FileNameTooLong] if the path is greater than [TableEntry::PATH_SIZE]
+    /// Will throw an [Error::FilenameTooLong] if the path is greater than 56 characters
     pub fn new(path: String, offset: u32, size: u32) -> Result<Self> {
         if path.len() > Self::PATH_SIZE {
             return Err(Error::FilenameTooLong(path));
