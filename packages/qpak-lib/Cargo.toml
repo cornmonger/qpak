@@ -6,7 +6,7 @@ authors = [
     "cornmonger <cornmonger@cornmonger.fish>",
     "Cormac O'Brien <Cormac O'Brien <cormac@c-obrien.org>",
 ]
-description = "qpak-lib: Unofficial Quake PAK file modification library"
+description = "An unofficial Quake PAK file modification library"
 license = "MIT"
 repository = "https://github.com/cornmonger/qpak"
 keywords = ["quake", "pak", "file"]
