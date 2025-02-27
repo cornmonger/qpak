@@ -1,12 +1,17 @@
 qpak
 =======================================================================================================================
+[![Latest Version]][crates.io]
+
+[Latest Version]: https://img.shields.io/crates/v/qpak.svg
+[crates.io]: https://crates.io/crates/qpak
+
 Unoffical Quake PAK file library and toolset
 
 Packages
 -----------------------------------------------------------------------------------------------------------------------
 The project provides: 
-- [qpak](./qpak) Multiplatform command-line tool for inspecting and modifying PAK files.
-- [qpak-lib](./qpak-lib) Sync/async library for inspecting and modifying PAK archives.
+- [qpak](./packages/qpak) Multiplatform command-line tool for inspecting and modifying PAK files.
+- [qpak-lib](./packages/qpak-lib) Sync/async library for inspecting and modifying PAK archives.
 
 Contributing
 -----------------------------------------------------------------------------------------------------------------------
