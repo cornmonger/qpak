@@ -9,6 +9,7 @@ authors = [
 description = "An unofficial Quake PAK file manipulation tool"
 license = "MIT"
 keywords = ["quake", "pak", "file"]
+repository = "https://github.com/cornmonger/qpak"
 categories = [
     "command-line-utilities",
     "filesystem",

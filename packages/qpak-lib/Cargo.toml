@@ -8,6 +8,7 @@ authors = [
 ]
 description = "qpak-lib: Unofficial Quake PAK file modification library"
 license = "MIT"
+repository = "https://github.com/cornmonger/qpak"
 keywords = ["quake", "pak", "file"]
 categories = ["filesystem", "game-development", "parsing"]
 
