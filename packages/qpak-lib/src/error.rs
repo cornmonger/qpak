@@ -35,8 +35,8 @@ pub enum Error {
     OpenPak(std::io::Error),
     #[error("Failed to write to PAK file: {0}")]
     WritePak(std::io::Error),
-    #[error("Failed to read from PAK file: {0}")]
-    ReadPak(String),
+    #[error("Failed to read from PAK file: {0} :: {1}")]
+    ReadPak(std::path::PathBuf, String),
 }
 
 /// Pak library result with Pak [Error]

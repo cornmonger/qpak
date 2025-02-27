@@ -404,7 +404,7 @@ impl PakFile {
 
         let mut reader = AsyncBufReader::new(file);
         let manifest = PakManifest::read(&mut reader).await
-            .map_err(|e| Error::ReadPak(e.to_string()))?;
+            .map_err(|e| Error::ReadPak(filepath.to_path_buf(), e.to_string()))?;
 
         Ok(Self::new(filepath, manifest))
     }
@@ -421,7 +421,7 @@ impl PakFile {
 
         let mut reader = BufReader::new(file);
         let manifest = PakManifest::read_sync(&mut reader)
-            .map_err(|e| Error::ReadPak(e.to_string()))?;
+            .map_err(|e| Error::ReadPak(filepath.to_path_buf(), e.to_string()))?;
 
         Ok(Self::new(filepath, manifest))
     }
@@ -452,6 +452,7 @@ impl PakFile {
         }
 
         manifest.table.write(&mut writer).await?;
+        writer.flush().await?;
 
         Ok(Self::new(PathBuf::from(output_filepath.as_ref()), manifest))
     }
@@ -482,6 +483,7 @@ impl PakFile {
         }
 
         manifest.table.write_sync(&mut writer)?;
+        writer.flush()?;
 
         Ok(Self::new(PathBuf::from(output_filepath.as_ref()), manifest))
     }
@@ -506,6 +508,8 @@ impl PakFile {
             let mut writer = BufWriter::new(file);
             writer.write_all(pak_item.data().as_ref())
                 .map_err(|e| Error::WritePak(e))?;
+
+            writer.flush()?;
         }
 
         Ok(())
@@ -531,6 +535,9 @@ impl PakFile {
             let mut writer = AsyncBufWriter::new(file);
             writer.write_all(pak_item.data().as_ref()).await
                 .map_err(|e| Error::WritePak(e))?;
+
+            writer.flush().await
+                .map_err(|e| Error::WritePak(e))?;
         }
 
         Ok(())
@@ -548,13 +555,13 @@ impl PakFile {
             for i in 0..table_entries.len() {
                 let table_entry = table_entries.get(i).unwrap();
                 reader.seek(SeekFrom::Start(table_entry.offset as u64)).await
-                    .map_err(|e| Error::ReadPak(e.to_string()))?;
+                    .map_err(|e| Error::ReadPak(self.filepath.to_path_buf(), e.to_string()))?;
 
                 let mut data: Vec<u8> = Vec::with_capacity(table_entry.size as usize);
                 (&mut reader)
                     .take(table_entry.size as u64)
                     .read_to_end(&mut data).await
-                        .map_err(|e| Error::ReadPak(e.to_string()))?;
+                        .map_err(|e| Error::ReadPak(self.filepath.to_path_buf(), e.to_string()))?;
 
                 let item = PakItem { table_entry, data };
                 yield item;
@@ -573,13 +580,13 @@ impl PakFile {
         //todo: make sure this is actually lazy in the way it's used in the cli cmd
         let map = table_entries.iter().map(move |table_entry| {
             reader.seek(SeekFrom::Start(table_entry.offset as u64))
-                .map_err(|e| Error::ReadPak(e.to_string()))?;
+                .map_err(|e| Error::ReadPak(self.filepath.to_path_buf(), e.to_string()))?;
 
             let mut data: Vec<u8> = Vec::with_capacity(table_entry.size as usize);
             (&mut reader)
                 .take(table_entry.size as u64)
                 .read_to_end(&mut data)
-                    .map_err(|e| Error::ReadPak(e.to_string()))?;
+                    .map_err(|e| Error::ReadPak(self.filepath.to_path_buf(), e.to_string()))?;
 
             Ok(PakItem { table_entry, data })
         });
