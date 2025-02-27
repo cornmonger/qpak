@@ -19,7 +19,7 @@ categories = [
 
 [dependencies]
 clap = { version = "4.5.30", features = ["derive"] }
-qpak-lib = { version = "1" }
+qpak-lib = { version = "1", path = "../qpak-lib" }
 tempfile = "3.17.1"
 
 [dev-dependencies]
