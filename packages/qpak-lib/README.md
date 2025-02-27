@@ -1,24 +1,26 @@
-qpak
+ qpak-lib
 =======================================================================================================================
-Unoffical Quake PAK file library and toolset
+Unoffical Quake PAK archive inspecton and modification library
 
-Packages
+Provides an sync/async library for accessing and manipulating files in the PAK file format.
+
+Compiling
 -----------------------------------------------------------------------------------------------------------------------
-The project provides: 
-- [qpak](./qpak) Multiplatform command-line tool for inspecting and modifying PAK files.
-- [qpak-lib](./qpak-lib) Sync/async library for inspecting and modifying PAK archives.
+Written against [Rust](https://rustup.rs/) 2024 edition.
+
+`cargo build`  
 
 Contributing
 -----------------------------------------------------------------------------------------------------------------------
 Pull requests are more than welcome!
 
-Check out the [TODO](docs/TODO.md).
+Check out the [TODO](../docs/TODO.md).
 
 License (MIT)
 -----------------------------------------------------------------------------------------------------------------------
-qpak: Unofficial Quake PAK library and toolset  
-Copyright (c) 2025 cornmonger  
-Copyright (c) 2017-2020 Cormac O'Brien
+qpak-lib: Unoffical Quake PAK archive inspecton and modification library  
+Copyright (C) 2025 cornmonger  
+Copyright (C) 2017-2020 Cormac O'Brien
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -38,10 +40,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-### Fork
+## Fork
 A large portion of this project's original source-code was forked out of Cormac O'Brien's ambitious [richter](https://github.com/cormac-obrien/richter)
 project.
 
-### Trademarks
+## Trademarks
 "Quake" is a trademark of [id Software LLC](https://idsoftware.com).  
 This software is not endorsed by id Software or its parent companies.

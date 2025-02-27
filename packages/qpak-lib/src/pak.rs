@@ -2,7 +2,6 @@
 //! Quake PAK archive manipulation.
 use std::{fs::File, io::{BufReader, Read, Seek, Write, BufWriter}, path::Path};
 use byteorder::{ReadBytesExt, WriteBytesExt, LittleEndian};
-use log::debug;
 use std::path::PathBuf;
 use tokio::{fs::File as AsyncFile, io::{AsyncRead, AsyncReadExt, AsyncSeek, AsyncSeekExt, AsyncWrite, AsyncWriteExt, BufReader as AsyncBufReader, BufWriter as AsyncBufWriter,SeekFrom}};
 use crate::{Error, Result};
@@ -16,7 +15,7 @@ pub struct Header {
 }
 
 impl Header {
-    pub(crate) const MAGIC_NUMBER: [u8; 4] = [b'P', b'A', b'C', b'K'];
+    pub(crate) const PAK_FILE_IDENTIFIER: [u8; 4] = [b'P', b'A', b'C', b'K'];
 
     pub fn new(table_offset: u32, table_size: u32) -> Self {
         Header { table_offset, table_size }
@@ -28,7 +27,7 @@ impl Header {
     {
         let mut magic = [0u8; 4];
         reader.read(&mut magic).await?;
-        if magic != Self::MAGIC_NUMBER {
+        if magic != Self::PAK_FILE_IDENTIFIER {
             return Err(Error::InvalidMagicNumber(magic));
         }
 
@@ -44,7 +43,7 @@ impl Header {
     {
         let mut magic = [0u8; 4];
         reader.read(&mut magic)?;
-        if magic != Self::MAGIC_NUMBER {
+        if magic != Self::PAK_FILE_IDENTIFIER {
             return Err(Error::InvalidMagicNumber(magic));
         }
 
@@ -58,7 +57,7 @@ impl Header {
     where
         R: AsyncWrite + Unpin
     {
-        writer.write_all(&Self::MAGIC_NUMBER).await?;
+        writer.write_all(&Self::PAK_FILE_IDENTIFIER).await?;
         writer.write_u32_le(self.table_offset).await?;
         writer.write_u32_le(self.table_size).await?;
         Ok(())
@@ -68,7 +67,7 @@ impl Header {
     where
         R: Write
     {
-        writer.write_all(&Self::MAGIC_NUMBER)?;
+        writer.write_all(&Self::PAK_FILE_IDENTIFIER)?;
         writer.write_u32::<LittleEndian>(self.table_offset)?;
         writer.write_u32::<LittleEndian>(self.table_size)?;
         Ok(())
@@ -120,7 +119,7 @@ impl Table {
     }
 
     pub fn contains<P: AsRef<Path>>(&self, path: P) -> bool {
-        let path = path.as_ref().to_str().unwrap();
+        let path = path.as_ref().to_string_lossy();
         self.entries.iter().any(|entry| entry.path == path)
     }
 
@@ -175,7 +174,8 @@ impl TableEntry {
         let path_end = path.iter()
             .position(|&b| b == 0)
             .ok_or(Error::FileNameTooLong(String::from_utf8_lossy(&path).into_owned()))?;
-        let path = String::from_utf8(path[0..path_end].to_vec()).unwrap();
+        let path = String::from_utf8(path[0..path_end].to_vec())
+            .map_err(|e| Error::NonUtf8FileName(e))?;
 
         let offset = reader.read_u32_le().await?;
         let size = reader.read_u32_le().await?;
@@ -192,7 +192,8 @@ impl TableEntry {
         let path_end = path.iter()
             .position(|b| *b == 0)
             .ok_or(Error::FileNameTooLong(String::from_utf8_lossy(&path).into_owned()))?;
-        let path = String::from_utf8(path[0..path_end].to_vec()).unwrap();
+        let path = String::from_utf8(path[0..path_end].to_vec())
+            .map_err(|e| Error::NonUtf8FileName(e))?;
 
         let offset = reader.read_u32::<LittleEndian>()?;
         let size = reader.read_u32::<LittleEndian>()?;
@@ -244,6 +245,7 @@ impl TableEntry {
     }
 }
 
+/// Represents the header, table, and table directory of a PAK file.
 #[derive(Debug)]
 pub struct PakManifest {
     header: Header,
@@ -251,12 +253,13 @@ pub struct PakManifest {
 }
 
 impl PakManifest {
-    const ITEMS_OFFSET: u32 = ((Header::MAGIC_NUMBER.len() * size_of::<u8>()) + size_of::<u32>() + size_of::<u32>()) as u32;
+    const ITEMS_OFFSET: u32 = ((Header::PAK_FILE_IDENTIFIER.len() * size_of::<u8>()) + size_of::<u32>() + size_of::<u32>()) as u32;
 
     pub fn new(header: Header, table: Table) -> Self {
         PakManifest { header, table }
     }
 
+    /// Reads a PAK manifest from an (buffered) reader.
     pub async fn read<R>(reader: &mut R) -> Result<Self>
     where
         R: AsyncRead + AsyncSeek + Unpin
@@ -266,6 +269,7 @@ impl PakManifest {
         Ok(Self::new(header, table))
     }
 
+    /// Reads a PAK manifest from a (buffered) reader.
     pub fn read_sync<R>(reader: &mut R) -> Result<Self>
     where
         R: Read + Seek
@@ -275,47 +279,27 @@ impl PakManifest {
         Ok(Self::new(header, table))
     }
 
-    fn walkdir<P: AsRef<Path>>(dir: P) -> Vec<(PathBuf, u64)> {
-        let mut entries = walkdir::WalkDir::new(&dir)
-            .follow_links(true)
-            .into_iter()
-            .filter_map(|entry| entry.ok())
-            .filter(|entry| !entry.file_name().to_string_lossy().starts_with('.'))
-            .filter(|entry| entry.metadata().is_ok_and(|metadata| metadata.is_file()))
-            .map(|entry| {
-                let metadata = entry.metadata().unwrap();
-                (entry.path().strip_prefix(&dir).unwrap().to_path_buf(), metadata.len())
-            })
-            .collect::<Vec<_>>();
-
-        entries.sort_by(|a, b| {
-            match a.0.parent().cmp(&b.0.parent()) {
-                std::cmp::Ordering::Equal => a.0.file_name().cmp(&b.0.file_name()),
-                other => other,
-            }
-        });
-        entries
-    }
-
+    /// Generates a PAK manifest from a directory.
     pub fn from_dir_sync<P>(input_dir: P) -> Result<Self>
     where
         P: AsRef<Path>
     {
-        let files = Self::walkdir(input_dir);
+        let files = pak_std_walkdir(input_dir);
 
         let mut total_size = 0;
         for (_, size) in &files {
             total_size += size;
         }
 
-        //println!("files {:?}", files);
         let table_size = (files.len() * TableEntry::SIZE) as u32;
         let header = Header::new(Self::ITEMS_OFFSET + total_size as u32, table_size);
 
         let mut table_entries = Vec::with_capacity(files.len());
         let mut entry_offset = Self::ITEMS_OFFSET;
         for (path, size) in files {
-            let path = path.to_str().unwrap().to_string(); //todo: handle non-utf8 paths
+            let path = path.to_str()
+                .ok_or_else(|| Error::NonUtf8Path(path.clone()))?
+                .to_string();
             let size = size as u32;
             let entry = TableEntry::new(path, entry_offset, size)?;
             table_entries.push(entry);
@@ -326,19 +310,24 @@ impl PakManifest {
         Ok(Self::new(header, table))
     }
 
+    // Returns the header of a PAK, containing offsets.
     pub fn header(&self) -> &Header {
         &self.header
     }
 
+    /// Returns the table (index) of a PAK
     pub fn table(&self) -> &Table {
         &self.table
     }
 
+    /// Returns the table entries of a PAK, including filepath, size, and offset of each item.
     pub fn table_entries(&self) -> &Vec<TableEntry> {
         &self.table.entries
     }
 }
 
+/// Represents a PAK file by filepath and [PakManifest]
+/// Provides methods to iterate over file contents.
 #[derive(Debug)]
 pub struct PakFile {
     filepath: PathBuf,
@@ -350,12 +339,11 @@ impl PakFile {
         PakFile { filepath, manifest }
     }
 
+    /// Constructs from a PAK file.
     pub async fn from_file<P>(filepath: P) -> Result<Self>
     where
         P: AsRef<Path>,
     {
-        debug!("Opening PAK file {}", filepath.as_ref().to_str().unwrap());
-
         let filepath = PathBuf::from(filepath.as_ref());
         let file = AsyncFile::open(&filepath).await?;
         let mut reader = AsyncBufReader::new(file);
@@ -364,12 +352,11 @@ impl PakFile {
         Ok(Self::new(filepath, manifest))
     }
 
+    /// Constructs from a PAK file.
     pub fn from_file_sync<P>(filepath: P) -> Result<Self>
     where
         P: AsRef<Path>,
     {
-        debug!("Opening PAK file {}", filepath.as_ref().to_str().unwrap());
-
         let filepath = PathBuf::from(filepath.as_ref());
         let file = File::open(&filepath)?;
         let mut reader = BufReader::new(file);
@@ -378,6 +365,7 @@ impl PakFile {
         Ok(Self::new(filepath, manifest))
     }
 
+    /// Creates a PAK file by copying files from a directory. The manifest for the directory must already have been generated using [PakManifest::from_dir].
     pub async fn write_from_dir<P>(input_dir: P, manifest: PakManifest, output_filepath: P) -> Result<Self>
     where
         P: AsRef<Path>,
@@ -407,6 +395,7 @@ impl PakFile {
         Ok(Self::new(PathBuf::from(output_filepath.as_ref()), manifest))
     }
 
+    /// Creates a PAK file by copying files from a directory. The manifest for the directory must already have been generated using [PakManifest::from_dir_sync].
     pub fn write_from_dir_sync<P>(input_dir: P, manifest: PakManifest, output_filepath: P) -> Result<Self>
     where
         P: AsRef<Path>,
@@ -436,6 +425,7 @@ impl PakFile {
         Ok(Self::new(PathBuf::from(output_filepath.as_ref()), manifest))
     }
 
+    /// Returns an iterator over each file item in the PAK, including data.
     pub fn read_items<'p>(&'p self) -> impl tokio_stream::Stream<Item = Result<PakItem<'p>>> {
         async_stream::try_stream!{
             let table_entries = &self.manifest.table.entries;
@@ -456,6 +446,7 @@ impl PakFile {
         }
     }
 
+    /// Returns an iterator over each file item in the PAK, including data.
     pub fn read_items_sync<'p>(&'p self) -> Result<impl Iterator<Item = Result<PakItem<'p>>>> {
         let table_entries = &self.manifest.table.entries;
         let file = File::open(&self.filepath)?;
@@ -475,99 +466,40 @@ impl PakFile {
         Ok(map)
     }
 
+    // Returns the header, table, and table entries of the PAK file.
     pub fn manifest(&self) -> &PakManifest {
         &self.manifest
     }
 }
 
+/// An iterator item representing a file in a PAK archive.
 #[derive(Debug)]
 pub struct PakItem<'t> {
     pub table_entry: &'t TableEntry,
     pub data: Vec<u8>
 }
 
-/*pub struct PakFileReadIterator<'p> {
-    pak: &'p PakFile,
-    reader: BufReader<File>,
-    index: usize,
-}
+/// Walks a directory and returns a vector of tuples containing the path and size of each file.
+/// Sorts based on heirarchy and file name.
+/// This sort order should be maintained in each PAK.
+pub fn pak_std_walkdir<P: AsRef<Path>>(dir: P) -> Vec<(PathBuf, u64)> {
+    let mut entries = walkdir::WalkDir::new(&dir)
+        .follow_links(true)
+        .into_iter()
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| !entry.file_name().to_string_lossy().starts_with('.'))
+        .filter(|entry| entry.metadata().is_ok_and(|metadata| metadata.is_file()))
+        .map(|entry| {
+            let metadata = entry.metadata().unwrap();
+            (entry.path().strip_prefix(&dir).unwrap().to_path_buf(), metadata.len())
+        })
+        .collect::<Vec<_>>();
 
-impl<'p> PakFileReadIterator<'p> {
-    pub async fn new<'i>(pak: &'p PakFile) -> Result<Self> {
-        let file = File::open(&pak.filepath).await?;
-        let reader = BufReader::new(file);
-        Ok(Self { pak, reader, index: 0 })
-    }
-}*/
-
-/*impl<'p> Iterator for PakFileReadIterator<'p> {
-    type Item = Result<PakItem<'p>>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.index += 1;
-        if self.index > self.pak.manifest.table.entries.len() {
-            return None;
+    entries.sort_by(|a, b| {
+        match a.0.parent().cmp(&b.0.parent()) {
+            std::cmp::Ordering::Equal => a.0.file_name().cmp(&b.0.file_name()),
+            other => other,
         }
-
-        let table_entry = &self.pak.manifest.table.entries.get(self.index)?;
-
-        self.reader.seek(SeekFrom::Start(table_entry.file_offset as u64))?;
-        let mut data: Vec<u8> = Vec::with_capacity(table_entry.file_size as usize);
-        todo!()
-    }
+    });
+    entries
 }
-
-        /*
-    /// Opens a file in the file tree for reading.
-    ///
-    /// # Examples
-    /// ```no_run
-    /// # extern crate richter;
-    /// use richter::common::pak::Pak;
-    ///
-    /// # fn main() {
-    /// let mut pak = Pak::new("pak0.pak").unwrap();
-    /// let progs_dat = pak.open("progs.dat").unwrap();
-    /// # }
-    /// ```
-    pub fn open<S>(&self, path: S) -> Result<&[u8], PakError>
-    where
-        S: AsRef<str>,
-    {
-        let path = path.as_ref();
-        self.0
-            .get(path)
-            .map(|s| s.as_ref())
-            .ok_or(PakError::NoSuchFile(path.to_owned()))
-    }
-
-    pub fn iter<'a>(&self) -> Iter<String, impl AsRef<[u8]>> {
-        self.0.iter()
-    }
-}*/
-
-pub struct PakFileEntryIter<'p> {
-    pak: &'p Pak,
-    table_index: usize,
-    table_entry: &'p TableEntry,
-    data: Vec<u8>
-}
-
-impl Iterator for PakFileEntryIter {
-    type Item = PakFileEntry;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.pak.table.entries.get(self.table_index + 1)
-            .map(|table_entry| {
-                let mut data = Vec::with_capacity(entry.size as usize);
-                (&mut self.pak.file)
-                    .seek(SeekFrom::Start(entry.offset as u64))
-                    .and_then(|_| (&mut self.pak.file).take(entry.size as u64).read_to_end(&mut data))
-                    .map(|_| PakFileEntry {
-                        name: entry.name.clone(),
-                        data: data.into_boxed_slice(),
-                    })
-            })
-    }
-}
-*/

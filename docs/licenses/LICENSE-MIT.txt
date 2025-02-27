@@ -1,5 +1,6 @@
 MIT License
 
+qpak: Unoffical Quake PAK file library and toolset
 Copyright (c) 2025 cornmonger
 Copyright (c) 2017-2020 Cormac O'Brien
 

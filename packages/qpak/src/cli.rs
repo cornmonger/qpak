@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
+/// Command-line arguments parsing for qpak
 #[derive(Parser)]
 #[command(author, version, about)]
 pub struct Cli {
@@ -8,16 +9,16 @@ pub struct Cli {
     pub command: Command,
 }
 
+/// Available commands for the qpak CLI
 #[derive(Subcommand)]
 pub enum Command {
     Pack (PackCommand),
     Unpack (UnpackCommand),
     List (ListCommand),
-    //Insert (InsertCommand),
 }
 
-#[derive(Parser)]
 /// Creates a new PAK file from a directory
+#[derive(Parser)]
 pub struct PackCommand {
     /// Directory to copy files from
     pub source_dir: PathBuf,
@@ -41,6 +42,7 @@ pub struct ListCommand {
     pub pak_file: PathBuf,
 }
 
+/// TODO
 /// Inserts a file or directory (recursively) into a PAK file
 #[derive(Parser)]
 pub struct InsertCommand {

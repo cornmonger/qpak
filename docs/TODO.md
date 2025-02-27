@@ -1,7 +1,46 @@
-# todo!()
+todo!()
+=======================================================================================================================
 
-- unit and implementation tests
-- tbd: flesh out the rest of the commands ...
-  - qpak insert [-fr] <pak_file> <input_file> [pak_item_path]
-  - qpak replace [-f] <pak_file> <pak_item_path> <input_file | input_directory>
-  - qpak delete [-fr] <pak_file> <pak_item_path>
+NOW
+-----------------------------------------------------------------------------------------------------------------------
+ - test & doc & cleanup
+ - publish v1
+
+ROADMAP
+-----------------------------------------------------------------------------------------------------------------------
+ - [qpak insert](#qpak-insert)
+ - [qpak replace](#qpak-replace)
+ - [qpak delete](#qpak-delete)
+ 
+### qpak insert
+`qpak insert [-f] <source_path> <pak_file> [pak_path_prefix]`
+
+Inserts a file or directory into a PAK file. Appends to directories when forced. Maintains standard sort order. 
+
+**source_path**: The path to the file or directory to insert   
+**pak_file**: The PAK file to modify  
+**pak_path_prefix**: The path prefix to use for the inserted item within the PAK. Default: (root)
+
+Options:
+- **-f --force**: Force overwriting existing items
+
+### qpak replace
+`qpak replace [-f] <source_path> <pak_file> <pak_path>`
+
+Completely replaces a file or directory in a PAK file. Deletes existing directories when forced. Maintains standard
+sort order. 
+
+**source_path**: The path to the file or directory to insert   
+**pak_file**: The PAK file to modify  
+**pak_path**: The path prefix to use for the inserted item within the PAK. Default: (root)
+
+Options:
+- **-f --force**: Force deletion of existing items
+
+### qpak delete
+`qpak delete <pak_file> <pak_path>`
+
+Deletes a file or directory in a PAK file. Maintains standard sort order. 
+
+**pak_file**: The PAK file to modify  
+**pak_path**: The path prefix to use for the inserted item within the PAK. Default: (root)

@@ -1,24 +1,59 @@
 qpak
 =======================================================================================================================
-Unoffical Quake PAK file library and toolset
+Unofficial Quake PAK file modification tool 
 
-Packages
+Provides a multiplatform command-line tool for inspecting and modifying and PAK files.
+
+Usage
 -----------------------------------------------------------------------------------------------------------------------
-The project provides: 
-- [qpak](./qpak) Multiplatform command-line tool for inspecting and modifying PAK files.
-- [qpak-lib](./qpak-lib) Sync/async library for inspecting and modifying PAK archives.
+`qpak --help`
+ - [qpak list](#qpak-list)
+ - [qpak unpack](#qpak-unpack)
+ - [qpak pack](#qpak-pack)
+
+### qpak list
+`qpak list <pak_file>`
+Describes the contents of a PAK file.
+
+**pak_file**: The PAK file to inspect
+
+### qpak unpack
+`qpak unpack <pak_file> <dest_dir>`
+Extracts a pak file into a directory.
+
+**pak_file**: The PAK file to extract from
+**dest_dir**: The directory to extract into
+
+### qpak pack
+`qpak pack <src_dir> <pak_file>`
+Creates a PAK file from a directory.
+
+**src_dir**: The directory to copy files from 
+**pak_file**: The PAK file to create
+
+Installing
+-----------------------------------------------------------------------------------------------------------------------
+### Cargo
+With [Rust](https://rustup.rs/) installed:  
+`cargo install qpak`
+
+Compiling
+-----------------------------------------------------------------------------------------------------------------------
+Written against [Rust](https://rustup.rs/) 2024 edition.
+
+`cargo build`  
 
 Contributing
 -----------------------------------------------------------------------------------------------------------------------
 Pull requests are more than welcome!
 
-Check out the [TODO](docs/TODO.md).
+Check out the [TODO](../docs/TODO.md).
 
 License (MIT)
 -----------------------------------------------------------------------------------------------------------------------
-qpak: Unofficial Quake PAK library and toolset  
-Copyright (c) 2025 cornmonger  
-Copyright (c) 2017-2020 Cormac O'Brien
+qpak: Unofficial Quake PAK file modification tool  
+Copyright (C) 2025 cornmonger  
+Copyright (C) 2017-2020 Cormac O'Brien
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -39,8 +74,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ### Fork
-A large portion of this project's original source-code was forked out of Cormac O'Brien's ambitious [richter](https://github.com/cormac-obrien/richter)
-project.
+A large portion of this project's original source-code was forked out of Cormac O'Brien's ambitious
+[richter](https://github.com/cormac-obrien/richter) project.
 
 ### Trademarks
 "Quake" is a trademark of [id Software LLC](https://idsoftware.com).  

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+/// Pak library errors
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("I/O error: {0}")]
@@ -18,7 +19,9 @@ pub enum Error {
     FileNameTooLong(String),
     #[error("Non-UTF-8 file name: {0}")]
     NonUtf8FileName(#[from] std::string::FromUtf8Error),
-    #[error("No such file in PAK archive: {0}")]
+    #[error("Non-UTF-8 file name: {0}")]
+    NonUtf8Path(std::path::PathBuf),
+     #[error("No such file in PAK archive: {0}")]
     NoSuchFile(String),
     #[error("Not a directory: {0}")]
     NotDirectory(String),
@@ -26,4 +29,5 @@ pub enum Error {
     PakPathExists(String)
 }
 
+/// Pak library result with Pak [Error]
 pub type Result<T> = std::result::Result<T, Error>;

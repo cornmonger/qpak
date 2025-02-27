@@ -1,6 +1,6 @@
 MIT License
 
-qpak: Unoffical Quake PAK file library and toolset
+qpak: Unofficial Quake PAK file modification tool
 Copyright (C) 2025 cornmonger
 Copyright (C) 2017-2020 Cormac O'Brien
 
