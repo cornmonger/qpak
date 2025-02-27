@@ -1,5 +1,10 @@
 qpak
 =======================================================================================================================
+[![Latest Version]][crates.io]
+
+[Latest Version]: https://img.shields.io/crates/v/qpak.svg
+[crates.io]: https://crates.io/crates/qpak
+
 Unofficial Quake PAK file modification tool 
 
 Provides a multiplatform command-line tool for inspecting and modifying and PAK files.

@@ -1,5 +1,10 @@
  qpak-lib
 =======================================================================================================================
+[![Latest Version]][crates.io]
+
+[Latest Version]: https://img.shields.io/crates/v/qpak-lib.svg
+[crates.io]: https://crates.io/crates/qpak-lib
+
 Unoffical Quake PAK archive inspecton and modification library
 
 Provides an sync/async library for accessing and manipulating files in the PAK file format.
