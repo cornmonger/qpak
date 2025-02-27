@@ -4,7 +4,7 @@
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("I/O error: {0}")]
-    Io(#[from] std::io::Error),
+    IO(#[from] std::io::Error),
     #[error("Invalid magic number: {0:?}")]
     InvalidMagicNumber([u8; 4]),
     #[error("Invalid file table offset: {0}")]
@@ -16,9 +16,9 @@ pub enum Error {
     #[error("Invalid file size: {0}")]
     InvalidFileSize(i32),
     #[error("File name too long: {0}")]
-    FileNameTooLong(String),
+    FilenameTooLong(String),
     #[error("Non-UTF-8 file name: {0}")]
-    NonUtf8FileName(#[from] std::string::FromUtf8Error),
+    NonUtf8Filename(#[from] std::string::FromUtf8Error),
     #[error("Non-UTF-8 file name: {0}")]
     NonUtf8Path(std::path::PathBuf),
      #[error("No such file in PAK archive: {0}")]
@@ -26,7 +26,15 @@ pub enum Error {
     #[error("Not a directory: {0}")]
     NotDirectory(String),
     #[error("Pak path already exists: {0}")]
-    PakPathExists(String)
+    PakPathExists(String),
+    #[error("Failed to create directory: {0}")]
+    CreateDirectory(std::io::Error),
+    #[error("Failed to open PAK file: {0}")]
+    OpenPak(std::io::Error),
+    #[error("Failed to write to PAK file: {0}")]
+    WritePak(std::io::Error),
+    #[error("Failed to read from PAK file: {0}")]
+    ReadPak(String),
 }
 
 /// Pak library result with Pak [Error]
