@@ -2,7 +2,7 @@
 //! # qpak
 //! Unofficial Quake PAK file modification tool
 //!
-//! Provides a multiplatform command-line tool for inspecting and modifying and PAK files.
+//! Provides a multiplatform command-line tool for inspecting and modifying PAK files.
 //!
 //! ## Usage
 //! `qpak --help`
