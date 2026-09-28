@@ -489,13 +489,12 @@ impl PakFile {
     }
 
     /// Extracts the contents of the PAK file to the specified directory.
-    /// Throws [Error::CreateDirectory], [Error::OpenPak], [Error::WritePak]
+    /// Throws [Error::CreateDirectory], [Error::OpenPak], [Error::WritePak], [Error::UnsafePath]
     pub fn extract_sync<P: AsRef<Path>>(&self, dest_dir: P) -> Result<()> {
         for pak_item in self.read_items_sync()? {
             let pak_item = pak_item?;
 
-            let mut path = std::path::PathBuf::from(dest_dir.as_ref());
-            path.push(&pak_item.table_entry().path());
+            let path = safe_join(dest_dir.as_ref(), pak_item.table_entry().path())?;
 
             if let Some(parent) = path.parent() {
                 std::fs::create_dir_all(parent)
@@ -516,13 +515,12 @@ impl PakFile {
     }
 
     /// Extracts the contents of the PAK file to the specified directory.
-    /// Throws [Error::CreateDirectory], [Error::OpenPak], [Error::WritePak]
+    /// Throws [Error::CreateDirectory], [Error::OpenPak], [Error::WritePak], [Error::UnsafePath]
     pub async fn extract<P: AsRef<Path>>(&self, dest_dir: P) -> Result<()> {
         use tokio_stream::StreamExt;
         let mut items = std::pin::pin!(self.read_items());
         while let Some(pak_item) = items.try_next().await? {
-            let mut path = std::path::PathBuf::from(dest_dir.as_ref());
-            path.push(&pak_item.table_entry().path());
+            let path = safe_join(dest_dir.as_ref(), pak_item.table_entry().path())?;
 
             if let Some(parent) = path.parent() {
                 tokio::fs::create_dir_all(parent).await
@@ -621,6 +619,45 @@ impl PakItem<'_> {
     }
 }
 
+/// Safely joins a stored PAK entry path onto a destination directory.
+///
+/// PAK entry paths are attacker-controlled data read from the archive,
+/// so they must not be trusted to stay within `dest_dir`. Without this check an
+/// entry such as `../escaped.txt` or `/etc/passwd` (a "tar slip" / "zip slip"
+/// path traversal) would cause extraction to write files outside `dest_dir`.
+///
+/// Only plain path components are accepted. Any absolute path, filesystem root,
+/// drive/UNC prefix, or `..` parent component is rejected with [Error::UnsafePath];
+/// `.` current-directory components are ignored. The returned path is therefore
+/// guaranteed to be contained within `dest_dir`.
+fn safe_join(dest_dir: &Path, entry_path: &str) -> Result<PathBuf> {
+    use std::path::Component;
+
+    let mut path = PathBuf::from(dest_dir);
+    let mut pushed_any = false;
+
+    for component in Path::new(entry_path).components() {
+        match component {
+            Component::Normal(part) => {
+                path.push(part);
+                pushed_any = true;
+            }
+            Component::CurDir => {}
+            Component::ParentDir | Component::RootDir | Component::Prefix(_) => {
+                return Err(Error::UnsafePath(entry_path.to_string()));
+            }
+        }
+    }
+
+    // An entry that contributes no real path components (empty, or only "."/separators)
+    // has no valid destination and would otherwise resolve to `dest_dir` itself.
+    if !pushed_any {
+        return Err(Error::UnsafePath(entry_path.to_string()));
+    }
+
+    Ok(path)
+}
+
 /// Walks a directory and returns a vector of tuples containing the path and size of each file.
 /// Sorts based on heirarchy and file name.
 /// This sort order should be maintained in each PAK.
@@ -670,4 +707,40 @@ pub async fn walk_pak_dir<P: AsRef<Path>>(dir: P) -> Result<Vec<(PathBuf, u64)>>
     tokio::task::spawn(async move {
         walk_pak_dir_sync(dir)
     }).await.expect("Expected task to join properly")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn safe_join_accepts_nested_paths() {
+        let dest = Path::new("/dest");
+        assert_eq!(safe_join(dest, "file.txt").unwrap(), Path::new("/dest/file.txt"));
+        assert_eq!(safe_join(dest, "sub/dir/file.txt").unwrap(), Path::new("/dest/sub/dir/file.txt"));
+        // Leading "./" and interior "." components are harmless and stripped.
+        assert_eq!(safe_join(dest, "./sub/./file.txt").unwrap(), Path::new("/dest/sub/file.txt"));
+    }
+
+    #[test]
+    fn safe_join_rejects_parent_traversal() {
+        let dest = Path::new("/dest");
+        assert!(matches!(safe_join(dest, "../escaped.txt"), Err(Error::UnsafePath(_))));
+        assert!(matches!(safe_join(dest, "sub/../../escaped.txt"), Err(Error::UnsafePath(_))));
+        assert!(matches!(safe_join(dest, ".."), Err(Error::UnsafePath(_))));
+    }
+
+    #[test]
+    fn safe_join_rejects_absolute_paths() {
+        let dest = Path::new("/dest");
+        assert!(matches!(safe_join(dest, "/etc/passwd"), Err(Error::UnsafePath(_))));
+        assert!(matches!(safe_join(dest, "/"), Err(Error::UnsafePath(_))));
+    }
+
+    #[test]
+    fn safe_join_rejects_empty_or_dot_only_paths() {
+        let dest = Path::new("/dest");
+        assert!(matches!(safe_join(dest, ""), Err(Error::UnsafePath(_))));
+        assert!(matches!(safe_join(dest, "."), Err(Error::UnsafePath(_))));
+    }
 }
