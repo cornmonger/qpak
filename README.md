@@ -19,6 +19,8 @@ Pull requests are more than welcome!
 
 Check out the [TODO](./docs/TODO.md).
 
+See also: [CONTRIBUTORS](./CONTRIBUTORS.md)
+
 License (MIT)
 -----------------------------------------------------------------------------------------------------------------------
 qpak: Unofficial Quake PAK library and toolset  

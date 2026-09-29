@@ -1,15 +1,11 @@
 [package]
 name = "qpak-lib"
-version = "1.0.0"
-edition = "2024"
-authors = [
-    "cornmonger <cornmonger@cornmonger.fish>",
-    "Cormac O'Brien <Cormac O'Brien <cormac@c-obrien.org>",
-]
-description = "An unofficial Quake PAK file modification library"
-license = "MIT"
-repository = "https://github.com/cornmonger/qpak"
-keywords = ["quake", "pak", "file"]
+description = "Unofficial Quake PAK file modification library"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords.workspace = true
 categories = ["filesystem", "game-development", "parsing"]
 
 [dependencies]

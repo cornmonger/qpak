@@ -21,6 +21,8 @@ Pull requests are more than welcome!
 
 Check out the [TODO](../../docs/TODO.md).
 
+See also: [CONTRIBUTORS](../../CONTRIBUTORS.md)
+
 License (MIT)
 -----------------------------------------------------------------------------------------------------------------------
 qpak-lib: Unoffical Quake PAK archive inspecton and modification library  

@@ -448,7 +448,7 @@ dependencies = [
 
 [[package]]
 name = "qpak"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "clap",
  "dir-diff",
@@ -458,7 +458,7 @@ dependencies = [
 
 [[package]]
 name = "qpak-lib"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "async-stream",
  "async-walkdir",
