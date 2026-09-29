@@ -21,6 +21,8 @@ pub enum Error {
     NonUtf8Filename(#[from] std::string::FromUtf8Error),
     #[error("Non-UTF-8 file name: {0}")]
     NonUtf8Path(std::path::PathBuf),
+    #[error("Unsafe entry path (would escape destination directory): {0}")]
+    UnsafePath(String),
      #[error("No such file in PAK archive: {0}")]
     NoSuchFile(String),
     #[error("Not a directory: {0}")]
