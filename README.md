@@ -10,8 +10,8 @@ Unoffical Quake PAK file library and toolset
 Packages
 -----------------------------------------------------------------------------------------------------------------------
 The project provides: 
-- [qpak](./packages/qpak) Multiplatform command-line tool for inspecting and modifying PAK files.
-- [qpak-lib](./packages/qpak-lib) Sync/async library for inspecting and modifying PAK archives.
+- [qpak](./crates/qpak) Multiplatform command-line tool for inspecting and modifying PAK files.
+- [qpak-lib](./crates/qpak-lib) Sync/async library for inspecting and modifying PAK archives.
 
 Contributing
 -----------------------------------------------------------------------------------------------------------------------

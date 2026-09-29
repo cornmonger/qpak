@@ -1,8 +1,8 @@
 [workspace]
 resolver = "3"
 members = [
-    "packages/qpak-lib",
-    "packages/qpak"
+    "crates/qpak-lib",
+    "crates/qpak"
 ]
 
 [workspace.package]
@@ -13,7 +13,7 @@ repository = "https://github.com/cornmonger/qpak"
 keywords = ["quake", "pak", "file"]
 
 [workspace.dependencies]
-qpak-lib = { path = "packages/qpak-lib", version = "1" }
+qpak-lib = { path = "crates/qpak-lib", version = "1" }
 
 [profile.release]
 strip = "symbols"
